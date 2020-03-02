@@ -22,3 +22,9 @@ When the boar ddetects the alamr time has been activated, it will generate the 5
 im wiritng this at 2AM gimme a break im tired
 
 As always al my work is open source. If soemoen does it better or cheaper, good for them.
+
+TODO:
+Add clock dispaly support
+Add RTC support
+Make a basic alarm system with the ability to change it in the EEPROM easily (fucntions?)
+Add web interface
