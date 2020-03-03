@@ -2,7 +2,7 @@
 #include <WiFiUdp.h>
 
 #include <EEPROM.h>
-#include <Time.h>
+#include <TimeLib.h>
 
 char * ssid = "lockeland";
 char * pass = "timmygraciesammy123";
@@ -22,6 +22,8 @@ IPAddress time_serverIP;
 const char* ntp_server_name = "time.nist.gov";
 
 const int NTP_PACKET_SIZE = 48;
+
+const uint32_t seventyYears = 2208988800UL;
 
 byte packetBuffer[NTP_PACKET_SIZE];
 
@@ -57,32 +59,29 @@ void setup ()
 
   Serial.println("Opening UDP Port!");
   udp.begin(local_port);
+  bool gotTime = false;
+  while(!gotTime)
+  {
+    gotTime = getTime();
+  }
+  char h_buf[2];
+  char m_buf[2];
+  getDigits(hour(),h_buf);
+  getDigits(minute(),m_buf);
+  Serial.print("The time is: ");
+  Serial.print(h_buf);
+  Serial.print(":");
+  Serial.println(m_buf);
+  Serial.print("Time but wut: ");
+  Serial.print(hour());
+  Serial.print(":");
+  Serial.println(minute());
 }
 
 void loop () 
 {
-  WiFi.hostByName(ntp_server_name, time_serverIP);
-
-  sendNTPpacket(time_serverIP);
-  delay(1000);
-  int cb = udp.parsePacket();
-  if(!cb)
-  {
-    Serial.println("No pakcet yet.");
-  }
-  else
-  {
-    udp.read(packetBuffer, NTP_PACKET_SIZE);
-    long int highWord = word(packetBuffer[40], packetBuffer[41]);
-    long int longWord = word(packetBuffer[42], packetBuffer[43]);
-    long int secs_since_1900 = highWord << 16 | longWord;
-    Serial.print("Secodns since Jan 1st, 1990: ");
-    Serial.println(secs_since_1900);
-    time.setTime(secs_since_1900);
-    Serial.print(hour());
-    printDigits(minute());
-    delay(500);
-  }
+  
+  
 }
 
 void alarm_start()
@@ -104,7 +103,7 @@ void alarm_start()
   {
     alarm_run_count++;
     
-    alarm_start()
+    alarm_start();
   }
 }
 
@@ -132,10 +131,40 @@ unsigned long sendNTPpacket(IPAddress& address)
   udp.endPacket();
 }
 
-void printDigits(int digits) {
- // utility function for digital clock display: prints preceding colon and leading 0
- Serial.print(":");
- if (digits < 10)
- Serial.print('0');
- Serial.print(digits);
+void getDigits(uint32_t digits, char * buf) {
+  char buf2[2];
+ if(digits < 10)
+ {
+   buf[0] = '0';
+ }
+ else
+ {
+   itoa(digits/10, buf2, 2);
+   buf[0] = buf2[0];
+ }
+ itoa(digits - ((digits/10) * 10),buf2, 2);
+ buf[1] = buf2[0];
+}
+
+bool getTime()
+{
+  WiFi.hostByName(ntp_server_name, time_serverIP);
+  sendNTPpacket(time_serverIP);
+  delay(500);
+  int cb = udp.parsePacket();
+  if(!cb)
+  {
+    Serial.println("No pakcet yet.");
+    return false;
+  }
+  else
+  {
+    udp.read(packetBuffer, NTP_PACKET_SIZE);
+    uint32_t highWord = word(packetBuffer[40], packetBuffer[41]);
+    uint32_t longWord = word(packetBuffer[42], packetBuffer[43]);
+    uint32_t secs_since_1900 = highWord << 16 | longWord;
+    long int secs_since_1970 = secs_since_1900 - seventyYears;
+    setTime(secs_since_1970);
+    return true;
+  }
 }
