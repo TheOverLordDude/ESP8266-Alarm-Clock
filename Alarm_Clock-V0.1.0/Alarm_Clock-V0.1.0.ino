@@ -107,6 +107,7 @@ void setup ()
   rtc.SetDateTime(compiled);
   deltaTime = millis();
   lastSecond = compiled.Second();
+  updateDisplay();
 }
 
 
@@ -118,9 +119,10 @@ void loop ()
     ESP.restart();
   }
   bool timeCheck = false;
-  if (lastSecond < compiled.Second())
+  if (lastSecond > compiled.Second())
   {
     timeCheck = true;
+    updateDisplay();
   }
   alarmOn = digitalRead(12);
   if(timeCheck == true)
@@ -176,10 +178,12 @@ void updateDisplay()
   int m_buf[2];
   getDigits(compiled.Hour(),h_buf);
   getDigits(compiled.Minute(),m_buf);
-  _7seg.print(h_buf[0], DEC);
-  _7seg.print(h_buf[1], DEC);
-  _7seg.print(m_buf[0], DEC);
-  _7seg.print(m_buf[1], DEC);
+  _7seg.clear();
+  _7seg.drawColon(true);
+  _7seg.writeDigitNum(h_buf[0], 0);
+  _7seg.writeDigitNum(h_buf[1], 1);
+  _7seg.writeDigitNum(m_buf[0], 2);
+  _7seg.writeDigitNum(m_buf[1], 3);
   _7seg.writeDisplay();
 }
 
